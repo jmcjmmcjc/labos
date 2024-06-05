@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <console.h>
 #include <kdebug.h>
+#include <string.h>
 
 #define TICK_NUM 100
 
@@ -46,6 +47,13 @@ idt_init(void) {
       *     You don't know the meaning of this instruction? just google it! and check the libs/x86.h to know more.
       *     Notice: the argument of lidt is idt_pd. try to find it!
       */
+    extern uintptr_t __vectors[];
+    int i;
+    for (i = 0; i < 256; ++i)
+        SETGATE(idt[i], 0, GD_KTEXT, __vectors[i], DPL_KERNEL);
+    SETGATE(idt[T_SYSCALL], 1, GD_KTEXT, __vectors[T_SYSCALL], DPL_USER);
+    SETGATE(idt[T_SWITCH_TOK], 1, GD_KTEXT, __vectors[T_SWITCH_TOK], DPL_USER);
+    lidt(&idt_pd);
 }
 
 static const char *
@@ -134,6 +142,11 @@ print_regs(struct pushregs *regs) {
     cprintf("  eax  0x%08x\n", regs->reg_eax);
 }
 
+static struct trapframe user_tf = {};
+
+extern void switch_to_userland();
+extern void switch_to_kernelland();
+
 /* trap_dispatch - dispatch based on what type of trap occurred */
 static void
 trap_dispatch(struct trapframe *tf) {
@@ -147,19 +160,52 @@ trap_dispatch(struct trapframe *tf) {
          * (2) Every TICK_NUM cycle, you can print some info using a funciton, such as print_ticks().
          * (3) Too Simple? Yes, I think so!
          */
+        ticks++;
+        if (ticks % TICK_NUM == 0) {
+            print_ticks();
+        }
         break;
     case IRQ_OFFSET + IRQ_COM1:
         c = cons_getc();
         cprintf("serial [%03d] %c\n", c, c);
+        if (c == '3') {
+            switch_to_userland();
+        }
+        if (c == '0') {
+            switch_to_kernelland();
+        }
         break;
     case IRQ_OFFSET + IRQ_KBD:
         c = cons_getc();
         cprintf("kbd [%03d] %c\n", c, c);
+        if (c == '3') {
+            switch_to_userland();
+        }
+        if (c == '0') {
+            switch_to_kernelland();
+        }
         break;
     //LAB1 CHALLENGE 1 : YOUR CODE you should modify below codes.
     case T_SWITCH_TOU:
+        if (tf->tf_cs != USER_CS) {
+            user_tf = *tf;
+            user_tf.tf_cs = USER_CS;
+            user_tf.tf_ds = user_tf.tf_es = user_tf.tf_ss = USER_DS;
+            user_tf.tf_esp = (uint32_t)tf + sizeof(struct trapframe) - 8;
+            user_tf.tf_eflags |= FL_IOPL_MASK | FL_IF;
+            *((uint32_t *)tf - 1) = (uint32_t)&user_tf;
+        }
+        break;
     case T_SWITCH_TOK:
-        panic("T_SWITCH_** ??\n");
+        if (tf->tf_cs != KERNEL_CS) {
+            struct trapframe *kern_tf;
+            tf->tf_cs = KERNEL_CS;
+            tf->tf_ds = tf->tf_es = KERNEL_DS;
+            tf->tf_eflags &= ~FL_IOPL_MASK;
+            kern_tf = (struct trapframe *)(tf->tf_esp - (sizeof(struct trapframe) - 8));
+            memmove(kern_tf, tf, sizeof(struct trapframe) - 8);
+            *((uint32_t *)tf - 1) = (uint32_t)kern_tf;
+        }
         break;
     case IRQ_OFFSET + IRQ_IDE1:
     case IRQ_OFFSET + IRQ_IDE2:
