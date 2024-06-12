@@ -53,3 +53,6 @@ dkms.conf
 obj/
 bin/
 tmp/
+.gdb.in
+*.patch
+*.log
