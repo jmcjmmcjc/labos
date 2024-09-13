@@ -4,6 +4,8 @@
 - <https://chyyuu.gitbooks.io/ucore_os_docs/content/>
 - <https://www.lanqiao.cn/courses/221/learning/>
 - <https://github.com/chyyuu/ucore_os_docs>
+- <https://github.com/chyyuu/os_course_info>
+- <https://github.com/LearningOS/os-lectures/>
 
 ## lab0 操作系统实验准备
 
