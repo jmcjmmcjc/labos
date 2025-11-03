@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 verbose=false
 if [ "x$1" = "x-v" ]; then
@@ -311,7 +311,8 @@ quick_check() {
 osimg=$(make_print ucoreimg)
 
 ## set default qemu-options
-qemuopts="-hda $osimg"
+# qemuopts="-hda $osimg"
+qemuopts="-drive file=$osimg,format=raw,if=ide"
 
 ## set break-function, default is readline
 brkfun=readline
@@ -322,7 +323,7 @@ quick_run 'Check PMM'
 
 pts=20
 quick_check 'check pmm'                                         \
-    'memory management: default_pmm_manager'                     \
+    'memory management: buddy_pmm_manager'                     \
     'check_alloc_page() succeeded!'                             \
     'check_pgdir() succeeded!'                                  \
     'check_boot_pgdir() succeeded!'
