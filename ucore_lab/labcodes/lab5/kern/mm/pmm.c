@@ -499,6 +499,7 @@ copy_range(pde_t *to, pde_t *from, uintptr_t start, uintptr_t end, bool share) {
             if ((nptep = get_pte(to, start, 1)) == NULL) {
                 return -E_NO_MEM;
             }
+#ifndef COPY_ON_WRITE
         uint32_t perm = (*ptep & PTE_USER);
         //get page from ptep
         struct Page *page = pte2page(*ptep);
@@ -526,6 +527,15 @@ copy_range(pde_t *to, pde_t *from, uintptr_t start, uintptr_t end, bool share) {
         memcpy(kva_dst, kva_src, PGSIZE);
         ret = page_insert(to, npage, start, perm);
         assert(ret == 0);
+#else
+			uint32_t perm = (*ptep & (PTE_U | PTE_P));
+			struct Page *page = pte2page(*ptep);
+			assert(page != NULL);
+			// Set the new mm to be readonly.
+			page_insert(to, page, start, perm);
+			// Set the old mm to be readonly
+			page_insert(from, page, start, perm);
+#endif
         }
         start += PGSIZE;
     } while (start != 0 && start < end);
