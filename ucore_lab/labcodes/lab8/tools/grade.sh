@@ -562,7 +562,7 @@ run_test -prog 'forktree'    -check default_check               \
 pts=20
 timeout=150
 run_test -prog 'priority'      -check default_check             \
-	'sched class: stride_scheduler'                         \
+	'sched class: cfs_scheduler'                         \
       - 'kernel_execve: pid = ., name = "priority".*'            \
         'main: fork ok,now need to wait pids.'                  \
         'stride sched correct result: 1 2 3 4 5'                \

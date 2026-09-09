@@ -276,12 +276,15 @@ qemu: $(UCOREIMG) $(SWAPIMG)
 qemu-nox: $(UCOREIMG) $(SWAPIMG)
 	$(V)$(QEMU)  -no-reboot -serial mon:stdio $(QEMUOPTS) -nographic
 
-TERMINAL := gnome-terminal
+# TERMINAL := gnome-terminal
+TERMINAL := xterm-256color
 
 debug: $(UCOREIMG) $(SWAPIMG)
 	$(V)$(QEMU) -S -s -parallel stdio $(QEMUOPTS) -serial null &
 	$(V)sleep 2
-	$(V)$(TERMINAL) -e "$(GDB) -q -x tools/gdbinit"
+
+run-gdb:
+	$(V)$(GDB) -q -x tools/gdbinit
 
 debug-nox: $(UCOREIMG) $(SWAPIMG)
 	$(V)$(QEMU) -S -s -serial mon:stdio $(QEMUOPTS) -nographic &
